@@ -148,7 +148,6 @@ module VagrantPlugins
         def bridged_adapter(config)
           # Find the bridged interfaces that are available
           bridgedifs = @env[:machine].provider.driver.read_bridged_interfaces
-          bridgedifs.delete_if { |interface| interface[:status] == "Down" || interface[:status] == "Unknown" }
 
           # The name of the chosen bridge interface will be assigned to this
           # variable.
@@ -162,8 +161,12 @@ module VagrantPlugins
               bridge = bridge.downcase if bridge.respond_to?(:downcase)
               bridgedifs.each do |interface|
                 if bridge === interface[:name].downcase
-                  @logger.debug("Specific bridge found as configured in the Vagrantfile. Using it.")
-                  chosen_bridge = interface[:name]
+                  if !config[:force_bridge] && ( interface[:status] == "Down" || interface[:status] == "Unknown" )
+                    @logger.debug("Bridge status unacceptable. Not using this bridge unless forced.")
+                  else
+                    @logger.debug("Specific bridge found as configured in the Vagrantfile. Using it.")
+                    chosen_bridge = interface[:name]
+                  end
                   break
                 end
               end
